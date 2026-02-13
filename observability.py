@@ -2,6 +2,7 @@ import time
 import uuid
 from typing import Callable
 
+import structlog
 from prometheus_client import (
     Counter,
     Histogram,
@@ -14,15 +15,10 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 
-# ---- Prometheus metrics ----
-# What we watch:
-# - request_total: overall traffic + error rate (by path/method/status)
-# - request_latency_seconds: latency distribution (by path/method)
-#
-# These are the bare minimum for production:
-# - RPS (rate(request_total[5m]))
-# - error rate (sum(rate(request_total{status=~"5.."}[5m])) / sum(rate(request_total[5m])))
-# - latency p95/p99 (histogram_quantile over request_latency_seconds)
+# -----------------------------
+# Metrics
+# -----------------------------
+
 request_total = Counter(
     "http_requests_total",
     "Total HTTP requests",
@@ -38,10 +34,16 @@ request_latency_seconds = Histogram(
 
 
 def get_request_id(request: Request) -> str:
-    # Prefer incoming ID, otherwise generate one
     incoming = request.headers.get("x-request-id")
     return incoming if incoming else str(uuid.uuid4())
 
+
+log = structlog.get_logger("weather-service")
+
+
+# -----------------------------
+# Metrics Middleware
+# -----------------------------
 
 class MetricsMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable):
@@ -60,3 +62,45 @@ class MetricsMiddleware(BaseHTTPMiddleware):
 
             request_total.labels(method=method, path=path, status=status).inc()
             request_latency_seconds.labels(method=method, path=path).observe(elapsed)
+
+
+# -----------------------------
+# Request ID + Structured Logging
+# -----------------------------
+
+class RequestIdLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next: Callable):
+        request_id = get_request_id(request)
+
+        request.state.request_id = request_id
+
+        start = time.perf_counter()
+        response: Response | None = None
+        status_code = 500
+
+        try:
+            log.info(
+                "request_start",
+                request_id=request_id,
+                method=request.method,
+                path=request.url.path,
+            )
+
+            response = await call_next(request)
+            status_code = response.status_code
+            return response
+
+        finally:
+            duration_ms = (time.perf_counter() - start) * 1000.0
+
+            log.info(
+                "request_end",
+                request_id=request_id,
+                method=request.method,
+                path=request.url.path,
+                status=status_code,
+                duration_ms=round(duration_ms, 2),
+            )
+
+            if response is not None:
+                response.headers["X-Request-Id"] = request_id

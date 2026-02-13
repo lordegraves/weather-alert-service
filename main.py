@@ -1,9 +1,19 @@
 from fastapi import FastAPI
 from starlette.responses import Response
 
-from observability import MetricsMiddleware, REGISTRY, generate_latest, CONTENT_TYPE_LATEST
+from logging_setup import configure_logging
+from observability import (
+    MetricsMiddleware,
+    RequestIdLoggingMiddleware,
+    REGISTRY,
+    generate_latest,
+    CONTENT_TYPE_LATEST,
+)
+
+configure_logging()
 
 app = FastAPI()
+app.add_middleware(RequestIdLoggingMiddleware)
 app.add_middleware(MetricsMiddleware)
 
 
