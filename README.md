@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # weather-alert-service
 Production-grade weather service demonstrating reliability patterns, caching, observability, and upstream resilience.
 
