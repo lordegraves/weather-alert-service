@@ -7,6 +7,23 @@ logging, and metrics-driven observability.
 This project demonstrates how modern backend services are hardened for
 production environments.
 
+## Architecture
+
+```
+Client
+   ↓
+FastAPI Service
+   ↓
+Cache + Rate Limiter
+   ↓
+Weather Client
+   ↓
+OpenWeatherMap
+
+Metrics → Prometheus → Alerts
+Logs → Structured JSON
+```
+
 ---
 
 ## Architecture Intent
