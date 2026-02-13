@@ -25,7 +25,7 @@ This service is designed with production operation in mind.
 The system is designed to degrade gracefully:
 - Cached responses continue serving during upstream instability.
 - Rate limiting prevents resource exhaustion.
-=======
+
 # Weather Alert Service
 
 Production-style FastAPI service demonstrating real-world reliability
