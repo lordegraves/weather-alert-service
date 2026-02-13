@@ -1,38 +1,10 @@
-# weather-alert-service
-Production-grade weather service demonstrating reliability patterns, caching, observability, and upstream resilience.
-
-## Operational Readiness
-
-This service is designed with production operation in mind.
-
-**Failure Handling**
-- Upstream requests use timeouts and retries to prevent thread exhaustion.
-- Failures return controlled 502 responses rather than leaking exceptions.
-
-**Traffic Protection**
-- Rate limiting protects both this service and the third-party API from abuse or runaway clients.
-
-**Performance**
-- TTL caching dramatically reduces upstream dependency load and improves latency.
-- Cache metrics expose hit/miss ratios for tuning.
-
-**Observability**
-- Structured logs with correlation IDs enable fast incident debugging.
-- Prometheus metrics support SLO-driven alerting.
-- Upstream latency is explicitly measured to detect dependency degradation.
-
-**Predictability Under Load**
-The system is designed to degrade gracefully:
-- Cached responses continue serving during upstream instability.
-- Rate limiting prevents resource exhaustion.
-
 # Weather Alert Service
 
 Production-style FastAPI service demonstrating real-world reliability
 engineering patterns including caching, rate limiting, structured
 logging, and metrics-driven observability.
 
-This project models how modern backend services are hardened for
+This project demonstrates how modern backend services are hardened for
 production environments.
 
 ---
@@ -179,6 +151,19 @@ These demonstrate how the service would integrate into a production
 monitoring stack.
 
 ---
+
+## Failure Scenarios
+
+This service is instrumented to make common production failures quickly diagnosable.
+
+Examples:
+
+- Upstream slowdown → visible via `weather_upstream_latency_seconds`
+- Cache inefficiency → rising `weather_cache_misses_total`
+- Traffic spikes → `rate_limit_blocked_total` increases
+- Elevated error rates → reflected in `http_requests_total` by status code
+
+The goal is to reduce time-to-detection and accelerate root cause analysis during incidents.
 
 ## Operational Mindset
 
